@@ -1,0 +1,15 @@
+# pnpm settings.
+#
+# These three packages are optional native dependencies that our app does not
+# use directly. Their install scripts are intentionally NOT run:
+#   - canvas : only needed for server-side PDF rasterising (we render PDFs in
+#              the browser with jsPDF, and in tests with PyMuPDF)
+#   - sharp  : Next.js image optimisation; we do not use next/image
+#   - core-js: legacy polyfills we do not need
+#
+# Leaving them false keeps `pnpm install` fast and avoids native build
+# toolchain requirements on Windows.
+allowBuilds:
+  canvas: false
+  core-js: false
+  sharp: false

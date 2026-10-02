@@ -1,0 +1,36 @@
+{
+  "name": "all-in-one-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "All-in-one personal chat app with selectable agents and multi-provider model fallback",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-routing.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-markdown.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-pdf.ts",
+    "test:e2e": "node scripts/test-e2e.mjs",
+    "sample:pdf": "node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/make-sample-pdf.ts"
+  },
+  "dependencies": {
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "idb": "8.0.0",
+    "jspdf": "2.5.2",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "4.8.69",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.7",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.5.1",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.7.3"
+  }
+}
