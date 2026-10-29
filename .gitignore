@@ -21,3 +21,6 @@ tsconfig.tsbuildinfo
 
 # Generated locally by `pnpm sample:pdf`
 sample-output/*.png
+
+# pnpm dependency metadata
+.pnpm-store/

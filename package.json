@@ -7,17 +7,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-routing.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-markdown.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-pdf.ts",
     "test:e2e": "node scripts/test-e2e.mjs",
     "sample:pdf": "node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/make-sample-pdf.ts"
   },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "dependencies": {
-    "next": "15.1.6",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "idb": "8.0.0",
     "jspdf": "2.5.2",
     "jszip": "3.10.1",
@@ -25,9 +27,9 @@
     "zod": "3.24.1"
   },
   "devDependencies": {
-    "@types/node": "22.10.7",
-    "@types/react": "19.0.7",
-    "@types/react-dom": "19.0.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "autoprefixer": "10.4.20",
     "postcss": "8.5.1",
     "tailwindcss": "3.4.17",

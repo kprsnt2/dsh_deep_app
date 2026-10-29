@@ -13,3 +13,10 @@ allowBuilds:
   canvas: false
   core-js: false
   sharp: false
+
+# pnpm 10+ blocks dependency install scripts unless they are listed here.
+# Sharp is Next.js's image optimiser; its prebuilt binary needs this script
+# to unpack. The app does not use next/image, but `next build`/`next start`
+# warn without it, so it is allowlisted to keep installs and builds clean.
+onlyBuiltDependencies:
+  - sharp

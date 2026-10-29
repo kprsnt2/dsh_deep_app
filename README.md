@@ -218,7 +218,9 @@ pnpm dev          # development server
 pnpm build        # production build
 pnpm start        # run the production build
 pnpm typecheck    # TypeScript check
-pnpm test         # routing + privacy tests (54 assertions across 3 suites)
+pnpm test         # routing + markdown + PDF + end-to-end tests (75 assertions)
+pnpm test:unit    # routing + markdown + PDF only (54 assertions)
+pnpm test:e2e     # builds nothing: exercises `next start` against a mock provider
 ```
 
 Individual suites:
@@ -228,6 +230,28 @@ node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings 
 node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-markdown.ts
 node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-pdf.ts
 ```
+
+> `pnpm test:e2e` runs `next start`, so run `pnpm build` first.
+
+---
+
+## Framework version
+
+Pinned to **Next.js 16.4.3** (React 19.3.1), which is past the patched 16.4.x line and
+clears the "vulnerable version of Next.js" advisory raised against 15.1.6. Notable
+changes made for the upgrade:
+
+- **Turbopack is the default bundler** in `next dev` and `next build`. The old
+  `webpack()` + `canvas` alias in `next.config.mjs` was removed; `pdfjs-dist`'s optional
+  native `canvas` dependency resolves to empty and the PDF worker is created with
+  `new URL(..., import.meta.url)` at runtime.
+- `jsx` is now `react-jsx` (Next.js rewrote `tsconfig.json` during the first build) and
+  `.next/dev/types/**/*.ts` was added to `include`.
+- `next lint` was removed upstream (it is now `eslint` directly). The unused `lint`
+  script was dropped rather than pulling in a new ESLint setup.
+- `onlyBuiltDependencies: [sharp]` was added to `pnpm-workspace.yaml` so pnpm 10+ runs
+  sharp's install script and Next.js stops warning about it.
+- Node.js **>= 20.9** is required by Next.js 16 (`engines` in `package.json`).
 
 ---
 

@@ -183,7 +183,11 @@ async function processPdf(file: File): Promise<ProcessResult> {
   let pages = 0;
   try {
     const pdfjs = await import("pdfjs-dist");
-    // Point at the worker shipped with the package.
+    // Point at the worker shipped with the package. The PDF only ever reaches
+    // this code in the browser (it is picked up from a real `<input
+    // type="file">`), so the URL is derived at runtime instead of at build
+    // time — `new URL(..., import.meta.url)` is not rewritten by Turbopack,
+    // Next.js 16's default bundler.
     pdfjs.GlobalWorkerOptions.workerSrc = new URL(
       "pdfjs-dist/build/pdf.worker.min.mjs",
       import.meta.url,
