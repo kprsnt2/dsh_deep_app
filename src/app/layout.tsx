@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Pinch-zoom is deliberately left enabled: a chat full of tables and lab
+  // reports is unusable on a phone if you cannot zoom in.
+  maximumScale: 5,
+  viewportFit: "cover",
   themeColor: "#0a0a0f",
 };
 

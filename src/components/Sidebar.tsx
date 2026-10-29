@@ -39,7 +39,7 @@ export default function Sidebar({
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden h-8 w-8 rounded-lg hover:bg-ink-800 text-gray-400"
+            className="lg:hidden h-10 w-10 -mr-1 rounded-lg hover:bg-ink-800 text-gray-400 text-lg"
             aria-label="Close sidebar"
           >
             ×
@@ -91,7 +91,7 @@ export default function Sidebar({
                           {agent.tagline}
                         </p>
                       </div>
-                      <span className="text-gray-600 group-hover:text-sky-400 text-sm opacity-0 group-hover:opacity-100 transition">
+                      <span className="text-gray-600 group-hover:text-sky-400 text-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                         +
                       </span>
                     </button>
@@ -133,9 +133,14 @@ export default function Sidebar({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDeleteChat(chat.id);
+                      if (
+                        chat.title === "New chat" ||
+                        confirm(`Delete "${chat.title}"? This cannot be undone.`)
+                      ) {
+                        onDeleteChat(chat.id);
+                      }
                     }}
-                    className="h-6 w-6 rounded-md text-gray-600 hover:text-red-400 hover:bg-ink-700 opacity-0 group-hover:opacity-100 transition text-sm"
+                    className="h-9 w-9 shrink-0 -mr-1 rounded-md text-gray-600 hover:text-red-400 hover:bg-ink-700 opacity-100 transition sm:h-6 sm:w-6 sm:mr-0 sm:opacity-0 sm:group-hover:opacity-100 text-sm"
                     aria-label="Delete chat"
                   >
                     ×
@@ -151,12 +156,15 @@ export default function Sidebar({
       <div className="border-t border-ink-800 p-2">
         <button
           onClick={onOpenSettings}
-          className="w-full rounded-xl px-3 py-2 text-left text-[12px] text-gray-400 hover:bg-ink-800 hover:text-gray-200 transition flex items-center gap-2"
+          className="w-full rounded-xl px-3 py-3 text-left text-[12px] text-gray-400 hover:bg-ink-800 hover:text-gray-200 transition flex items-center gap-2"
         >
           ⚙️ Settings &amp; models
         </button>
         {config && (
-          <div className="px-3 py-1.5 flex flex-wrap gap-1">
+          <div
+            className="px-3 py-1.5 flex flex-wrap gap-1"
+            style={{ marginBottom: "var(--safe-bottom)" }}
+          >
             {config.providers
               .filter((p) => p.configured)
               .map((p) => (
@@ -187,7 +195,7 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 rounded-lg px-3 py-1.5 text-[12px] font-medium transition ${
+      className={`flex-1 rounded-lg px-3 py-2.5 text-[12px] font-medium transition sm:py-1.5 ${
         active ? "bg-ink-800 text-gray-100" : "text-gray-500 hover:text-gray-300"
       }`}
     >

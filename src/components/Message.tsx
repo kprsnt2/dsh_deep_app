@@ -98,17 +98,17 @@ export default function Message({
 
   /* ---------------------------- assistant turn --------------------------- */
   return (
-    <div className="flex gap-3 animate-fade-up">
+    <div className="flex gap-2 animate-fade-up sm:gap-3">
       {agent && <AgentAvatar agent={agent} />}
 
       <div className="min-w-0 flex-1">
         {/* header */}
-        <div className="mb-1 flex flex-wrap items-center gap-2">
+        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-[13px] font-semibold text-gray-200">
             {agent?.name ?? agentId}
           </span>
           {msg.servedBy && (
-            <span className="rounded-md border border-ink-700 bg-ink-850 px-1.5 py-0.5 text-[10px] text-gray-400">
+            <span className="max-w-full truncate rounded-md border border-ink-700 bg-ink-850 px-1.5 py-0.5 text-[10px] text-gray-400">
               {PROVIDER_LABEL[msg.servedBy.provider] ?? msg.servedBy.provider} ·{" "}
               {msg.servedBy.model}
             </span>
@@ -219,7 +219,7 @@ function Action({
   return (
     <button
       onClick={onClick}
-      className="rounded-lg border border-ink-700 bg-ink-850 px-2 py-1 text-[11px] text-gray-400 hover:text-gray-200 hover:border-ink-600 transition"
+      className="min-h-[44px] rounded-lg border border-ink-700 bg-ink-850 px-2.5 py-1 text-[11px] text-gray-400 hover:text-gray-200 hover:border-ink-600 transition sm:min-h-0 sm:px-2 sm:py-1"
     >
       {children}
     </button>

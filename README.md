@@ -209,6 +209,44 @@ sequence. `TIER_TIMEOUT_MS` (default 45s) caps each tier, so 4 failing tiers is 
 **Environment variables.** Set `APP_PASSCODE` plus your provider keys in the host's
 dashboard — same names as in `.env.example`. Never commit `.env.local`.
 
+**Static assets.** `public/pdf.worker.min.mjs` must be published along with the app
+(it is committed for that reason). Verify with `pnpm preflight` after a `pdfjs-dist`
+upgrade — without it, PDF text extraction falls back to the main thread.
+
+---
+
+## Mobile & responsive layout
+
+The UI is a single responsive layout, not a separate mobile app: phones get a drawer
+sidebar, a compact top bar, and a bottom-sheet model picker; tablets and desktops get the
+persistent sidebar. On a Pixel-size viewport (390×844) every screen — agent picker, drawer,
+chat, model sheet, settings — fits with **no horizontal page overflow**, and there are no
+sub-40px touch targets.
+
+Specific work done for touch devices:
+
+- **Real viewport height** — the shell uses `100dvh` (with a `100vh` fallback) so the
+  composer is never hidden behind the collapsible mobile browser URL bar.
+- **On-screen keyboard** — a `visualViewport` listener measures the keyboard and shrinks
+  the shell by exactly that much (`--kb`), keeping the composer and the newest message
+  visible instead of letting the keyboard cover them.
+- **Safe areas** — `viewport-fit=cover` plus `env(safe-area-inset-*)` padding for notched
+  phones and the home indicator.
+- **No iOS input zoom** — the composer and passcode field are 16px on touch screens.
+  Pinch-zoom is *enabled* (the old `maximumScale: 1` blocked it), because lab-report
+  tables need zooming.
+- **Touch affordances** — the "remove attachment" × and chat delete × are always visible
+  on touch (they were hover-only, i.e. invisible and unreachable), chat delete asks for
+  confirmation, and buttons that were 27–36px tall are 40–44px on touch.
+- **The message pane actually scrolls** on mobile Safari (`min-h-0` + `overscroll-contain`),
+  and background scrolling is locked while the drawer, settings or model sheet is open.
+- **Phone camera photos** — images are decoded with EXIF orientation applied, so a portrait
+  photo no longer arrives sideways; HEIC photos convert through the browser decoder where
+  it supports them.
+- **PDF text extraction** gets a line-break-aware reader (headings no longer run into the
+  next paragraph) and a 30-second budget per file, after which the raw PDF is still
+  attached for the models that read PDFs natively.
+
 ---
 
 ## Commands
@@ -221,6 +259,7 @@ pnpm typecheck    # TypeScript check
 pnpm test         # routing + markdown + PDF + end-to-end tests (75 assertions)
 pnpm test:unit    # routing + markdown + PDF only (54 assertions)
 pnpm test:e2e     # builds nothing: exercises `next start` against a mock provider
+pnpm preflight    # ensures public/pdf.worker.min.mjs matches pdfjs-dist
 ```
 
 Individual suites:
@@ -243,8 +282,8 @@ changes made for the upgrade:
 
 - **Turbopack is the default bundler** in `next dev` and `next build`. The old
   `webpack()` + `canvas` alias in `next.config.mjs` was removed; `pdfjs-dist`'s optional
-  native `canvas` dependency resolves to empty and the PDF worker is created with
-  `new URL(..., import.meta.url)` at runtime.
+  native `canvas` dependency resolves to empty, and the PDF.js worker is served from
+  `public/` (see Mobile & responsive layout).
 - `jsx` is now `react-jsx` (Next.js rewrote `tsconfig.json` during the first build) and
   `.next/dev/types/**/*.ts` was added to `include`.
 - `next lint` was removed upstream (it is now `eslint` directly). The unused `lint`

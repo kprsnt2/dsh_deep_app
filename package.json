@@ -7,6 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preflight": "node scripts/check-pdf-worker.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-routing.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-markdown.ts && node --import ./scripts/alias-hook.mjs --experimental-strip-types --no-warnings scripts/test-pdf.ts",

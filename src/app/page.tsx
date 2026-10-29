@@ -49,6 +49,34 @@ export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  /* ------------------------------ mobile chrome --------------------------- */
+
+  // Lock background scrolling while a full-screen overlay (drawer, settings,
+  // model sheet) is open — otherwise the page underneath drags on iOS.
+  const overlayOpen = sidebarOpen || showSettings || modelMenuOpen;
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [overlayOpen]);
+
+  // Keep the message view anchored to the bottom while an on-screen keyboard
+  // pushes the composer up.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fitKeyboard = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty("--kb", `${Math.round(kb)}px`);
+      bottomRef.current?.scrollIntoView({ block: "end" });
+    };
+    vv.addEventListener("resize", fitKeyboard);
+    return () => vv.removeEventListener("resize", fitKeyboard);
+  }, []);
+
   /* ------------------------------ bootstrap ------------------------------ */
 
   useEffect(() => {
@@ -340,7 +368,7 @@ export default function Home() {
 
   if (!ready) {
     return (
-      <main className="flex h-screen items-center justify-center">
+      <main className="flex h-screen items-center justify-center" style={{ height: "var(--app-h)" }}>
         <p className="text-gray-500 animate-pulse-soft">Loading…</p>
       </main>
     );
@@ -348,7 +376,7 @@ export default function Home() {
 
   if (!authed) {
     return (
-      <main className="flex h-screen items-center justify-center p-4">
+      <main className="flex h-screen items-center justify-center p-4" style={{ height: "var(--app-h)" }}>
         <div className="w-full max-w-sm rounded-2xl border border-ink-700 bg-ink-900 p-6">
           <div className="mb-4 flex items-center gap-2">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center">
@@ -364,7 +392,7 @@ export default function Home() {
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void tryAuth()}
-            className="w-full rounded-xl border border-ink-700 bg-ink-850 px-3 py-2 text-sm outline-none focus:border-ink-600"
+            className="w-full rounded-xl border border-ink-700 bg-ink-850 px-3 py-2.5 text-sm outline-none focus:border-ink-600"
             placeholder="••••••••"
             autoFocus
           />
@@ -373,7 +401,7 @@ export default function Home() {
           )}
           <button
             onClick={() => void tryAuth()}
-            className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium hover:bg-sky-500 transition"
+            className="mt-4 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium hover:bg-sky-500 transition"
           >
             Unlock
           </button>
@@ -391,7 +419,7 @@ export default function Home() {
   const isWorksheet = activeChat?.agentId === "worksheet";
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="app-shell flex overflow-hidden">
       {/* sidebar - desktop */}
       <div className="hidden lg:block w-[300px] shrink-0">
         <Sidebar
@@ -415,7 +443,10 @@ export default function Home() {
             className="absolute inset-0 bg-black/60"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-[290px]">
+          <div
+            className="absolute left-0 top-0 w-[86vw] max-w-[320px]"
+            style={{ height: "var(--app-h)" }}
+          >
             <Sidebar
               config={config}
               chats={chats}
@@ -439,10 +470,10 @@ export default function Home() {
       {/* main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* top bar */}
-        <header className="flex items-center gap-3 border-b border-ink-800 bg-ink-900 px-3 py-2.5">
+        <header className="flex items-center gap-2 border-b border-ink-800 bg-ink-900 px-3 py-2 sm:gap-3 sm:py-2.5">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden h-9 w-9 rounded-xl hover:bg-ink-800 text-gray-400"
+            className="lg:hidden h-10 w-10 shrink-0 rounded-xl hover:bg-ink-800 text-gray-400 text-lg"
             aria-label="Open menu"
           >
             ☰
@@ -453,30 +484,31 @@ export default function Home() {
               <AgentAvatar agent={agent} size="sm" />
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-medium">{agent.name}</p>
-                <p className="truncate text-[11px] text-gray-500">
+                <p className="hidden truncate text-[11px] text-gray-500 sm:block">
                   {agent.tagline}
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-[13px] text-gray-500">
-              Pick an agent from the sidebar to begin
+            <p className="min-w-0 truncate text-[13px] text-gray-500">
+              <span className="hidden sm:inline">Pick an agent from the sidebar to begin</span>
+              <span className="sm:hidden">Pick an agent ☰</span>
             </p>
           )}
 
           <div className="flex-1" />
 
           {/* model picker */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setModelMenuOpen((o) => !o)}
-              className="rounded-xl border border-ink-700 bg-ink-850 px-2.5 py-1.5 text-[11px] text-gray-300 hover:border-ink-600 transition max-w-[190px] truncate"
+              className="h-10 max-w-[150px] truncate rounded-xl border border-ink-700 bg-ink-850 px-2.5 py-1.5 text-[11px] text-gray-300 hover:border-ink-600 transition sm:h-auto sm:max-w-[190px]"
             >
               {forcedModel
                 ? (config?.defaultChain.find(
                     (t) => `${t.provider}:${t.model}` === forcedModel,
                   )?.label ?? forcedModel)
-                : "Auto (fallback chain)"}
+                : <><span className="sm:hidden">Auto</span><span className="hidden sm:inline">Auto (fallback chain)</span></>}
             </button>
 
             {modelMenuOpen && (
@@ -485,7 +517,16 @@ export default function Home() {
                   className="fixed inset-0 z-10"
                   onClick={() => setModelMenuOpen(false)}
                 />
-                <div className="absolute right-0 z-20 mt-1 w-[300px] rounded-xl border border-ink-700 bg-ink-900 p-1.5 shadow-2xl">
+                {/* Sheet pinned above the model button: right-aligned popovers
+                    overflow a phone screen, so on small screens this becomes
+                    a bottom sheet. */}
+                <div
+                  className="fixed inset-x-0 bottom-0 z-20 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-ink-700 bg-ink-900 p-2 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-1 sm:max-h-[70vh] sm:w-[300px] sm:rounded-xl"
+                  style={{ paddingBottom: "calc(0.5rem + var(--safe-bottom))" }}
+                >
+                  <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wider text-gray-600 sm:hidden">
+                    Model
+                  </p>
                   <MenuItem
                     active={forcedModel === ""}
                     onClick={() => {
@@ -525,19 +566,29 @@ export default function Home() {
           <button
             onClick={() => setPrivacyMode((p) => !p)}
             title="Private mode routes to Gemini only (no training on your data)"
-            className={`rounded-xl border px-2.5 py-1.5 text-[11px] transition ${
+            aria-label={
+              privacyMode
+                ? "Private mode on: routes to Gemini only"
+                : "Standard mode: uses the fallback chain"
+            }
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border px-0 text-[11px] transition sm:h-auto sm:w-auto sm:px-2.5 sm:py-1.5 ${
               privacyMode
                 ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
                 : "border-ink-700 bg-ink-850 text-gray-400 hover:border-ink-600"
             }`}
           >
-            {privacyMode ? "🔒 Private" : "🔓 Standard"}
+            {privacyMode ? (
+              <>🔒<span className="hidden sm:inline"> Private</span></>
+            ) : (
+              <>🔓<span className="hidden sm:inline"> Standard</span></>
+            )}
           </button>
         </header>
 
-        {/* messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-3 py-5 space-y-5">
+        {/* messages: `min-h-0` lets this pane actually scroll on mobile Safari,
+            which otherwise lets the whole page grow instead. */}
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto max-w-3xl px-3 py-4 space-y-5 sm:py-5">
             {messages.length === 0 && (
               <EmptyState
                 agentId={activeChat?.agentId ?? null}
@@ -559,7 +610,10 @@ export default function Home() {
         </div>
 
         {/* composer */}
-        <div className="border-t border-ink-800 bg-ink-900 px-3 py-3">
+        <div
+          className="border-t border-ink-800 bg-ink-900 px-3 py-3"
+          style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
+        >
           <div className="mx-auto max-w-3xl">
             <Composer
               value={input}
@@ -610,7 +664,7 @@ function MenuItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-lg px-2 py-1.5 text-left transition ${
+      className={`w-full rounded-lg px-2 py-2.5 text-left transition sm:py-1.5 ${
         active ? "bg-ink-800" : "hover:bg-ink-850"
       }`}
     >

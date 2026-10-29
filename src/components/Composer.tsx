@@ -50,14 +50,21 @@ export default function Composer({
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
+  // Touch screens have no Enter key, so "Enter to send" means nothing there.
+  const [touch, setTouch] = useState(false);
 
-  // Auto-grow the textarea.
+  useEffect(() => {
+    setTouch(window.matchMedia?.("(pointer: coarse)").matches ?? "ontouchstart" in window);
+  }, []);
+
+  // Auto-grow the textarea. Phones get a smaller ceiling so the input box
+  // never eats the conversation above it.
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = `${Math.min(ta.scrollHeight, 260)}px`;
-  }, [value]);
+    ta.style.height = `${Math.min(ta.scrollHeight, touch ? 160 : 260)}px`;
+  }, [value, touch]);
 
   const addFiles = useCallback(
     async (files: File[]) => {
@@ -226,7 +233,7 @@ export default function Composer({
               </div>
               <button
                 onClick={() => remove(a.id)}
-                className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink-700 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                className="absolute -right-1.5 -top-1.5 h-6 w-6 rounded-full bg-ink-700 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-100 transition sm:h-5 sm:w-5 sm:opacity-0 sm:group-hover:opacity-100"
                 aria-label={`Remove ${a.name}`}
               >
                 ×
@@ -260,8 +267,9 @@ export default function Composer({
           onKeyDown={onKeyDown}
           rows={1}
           disabled={disabled}
+          enterKeyHint="send"
           placeholder={placeholder ?? "Type a message…"}
-          className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-[15px] outline-none placeholder:text-gray-600 disabled:opacity-50"
+          className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-base outline-none placeholder:text-gray-600 disabled:opacity-50 sm:text-[15px]"
         />
 
         <div className="flex items-center gap-1 px-2 pb-2">
@@ -295,7 +303,7 @@ export default function Composer({
           </IconBtn>
 
           {attachments.length > 0 && (
-            <span className="ml-1 text-[11px] text-gray-500">
+            <span className="ml-1 truncate text-[11px] text-gray-500">
               {attachments.length} file{attachments.length > 1 ? "s" : ""} ·{" "}
               {totalMB.toFixed(1)} MB
             </span>
@@ -304,15 +312,15 @@ export default function Composer({
           <div className="flex-1" />
 
           {busyFiles > 0 && (
-            <span className="text-[11px] text-sky-400 animate-pulse-soft mr-2">
-              processing {busyFiles}…
+            <span className="mr-2 truncate text-[11px] text-sky-400 animate-pulse-soft">
+              {touch ? "…" : "processing"} {busyFiles}…
             </span>
           )}
 
           {busy ? (
             <button
               onClick={onStop}
-              className="rounded-xl bg-ink-700 hover:bg-red-600 px-4 py-2 text-sm font-medium transition"
+              className="h-10 shrink-0 rounded-xl bg-ink-700 hover:bg-red-600 px-4 text-sm font-medium transition sm:h-auto sm:py-2"
             >
               Stop
             </button>
@@ -320,7 +328,7 @@ export default function Composer({
             <button
               onClick={onSend}
               disabled={!canSend || busyFiles > 0}
-              className="rounded-xl bg-sky-600 hover:bg-sky-500 disabled:bg-ink-700 disabled:text-gray-500 px-4 py-2 text-sm font-medium transition"
+              className="h-10 shrink-0 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:bg-ink-700 disabled:text-gray-500 px-4 text-sm font-medium transition sm:h-auto sm:py-2"
             >
               Send
             </button>
@@ -328,9 +336,21 @@ export default function Composer({
         </div>
       </div>
 
+      {/* The agent's attachment hint is useful on a phone but too long in
+          full, so it gets one clamped line there. */}
       <p className="mt-1.5 px-1 text-[11px] text-gray-600">
-        {hint ? `${hint} · ` : ""}Enter to send · Shift+Enter for a new line · Paste screenshots
-        anywhere
+        {hint ? (
+          <>
+            <span className="line-clamp-1 sm:line-clamp-none">{hint}</span>
+            <span className="hidden sm:inline"> · </span>
+          </>
+        ) : null}
+        <span className="hidden sm:inline">
+          Enter to send · Shift+Enter for a new line · Paste screenshots anywhere
+        </span>
+        <span className="sm:hidden">
+          Paste screenshots · up to {MAX_IMAGES_PER_MESSAGE} images per message
+        </span>
       </p>
     </div>
   );
@@ -351,7 +371,7 @@ function IconBtn({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="h-9 w-9 rounded-xl hover:bg-ink-700 flex items-center justify-center text-base transition"
+      className="h-10 w-10 rounded-xl hover:bg-ink-700 flex items-center justify-center text-base transition sm:h-9 sm:w-9"
     >
       {children}
     </button>

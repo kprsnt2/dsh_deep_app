@@ -1,5 +1,6 @@
 import type { StoredAttachment } from "./storage";
 import { uid } from "./storage";
+import { configurePdfWorker, PDF_TEXT_DEADLINE_MS } from "./pdf-worker";
 
 /** File kinds we understand. */
 export type FileKind = "image" | "pdf" | "text" | "csv" | "docx" | "unknown";
@@ -115,12 +116,44 @@ async function processImage(file: File): Promise<ProcessResult> {
   };
 }
 
+/**
+ * Read image pixels. `createImageBitmap` handles EXIF orientation (so phone
+ * photos come out upright, not sideways) and supports every format the
+ * browser can decode, including modern iPhone HEIC.
+ */
+async function decodeBitmap(
+  file: File,
+  orient: ImageOrientation,
+): Promise<ImageBitmap> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(file, { imageOrientation: orient });
+    } catch {
+      /* fall through to the <img> path */
+    }
+  }
+  // Older Safari has no createImageBitmap support for File at all.
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.decoding = "async";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("This image could not be decoded."));
+      img.src = url;
+    });
+    return await createImageBitmap(img, { imageOrientation: orient });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function downscaleImage(
   file: File,
   maxEdge: number,
   quality: number,
 ): Promise<{ blob: Blob; width: number; height: number }> {
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await decodeBitmap(file, "from-image");
   let { width, height } = bitmap;
 
   const scale = Math.min(1, maxEdge / Math.max(width, height));
@@ -132,8 +165,9 @@ async function downscaleImage(
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
+    const dims = { width: bitmap.width, height: bitmap.height };
     bitmap.close();
-    return { blob: file, width: bitmap.width, height: bitmap.height };
+    return { blob: file, ...dims };
   }
   // White background so transparent PNGs do not turn black in JPEG.
   ctx.fillStyle = "#ffffff";
@@ -153,7 +187,7 @@ async function downscaleImage(
 
 async function convertToPng(file: File): Promise<Blob | null> {
   try {
-    const bitmap = await createImageBitmap(file);
+    const bitmap = await decodeBitmap(file, "from-image");
     const canvas = document.createElement("canvas");
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;
@@ -177,21 +211,23 @@ async function convertToPng(file: File): Promise<Blob | null> {
  * The raw PDF is ALSO kept, because Gemini reads PDFs natively (including
  * scanned ones via its own OCR). The extracted text is a fallback for
  * providers that cannot take a PDF directly.
+ *
+ * The text layer is a bonus, never a gate: anything that goes wrong here
+ * (no worker, time budget, jsdom test run) still attaches the file.
  */
 async function processPdf(file: File): Promise<ProcessResult> {
   let text = "";
   let pages = 0;
+  // A scanned 12-page report is slow to parse; bail after 30s (mobile Safari
+  // kills long-running main-thread work anyway) and still attach the file.
+  const deadline = Date.now() + PDF_TEXT_DEADLINE_MS;
   try {
+    // SSR/SSG has no DOM: skip extraction there rather than guessing at a
+    // worker URL, and let the browser run do the real work.
+    if (typeof window === "undefined") throw new Error("no DOM");
     const pdfjs = await import("pdfjs-dist");
-    // Point at the worker shipped with the package. The PDF only ever reaches
-    // this code in the browser (it is picked up from a real `<input
-    // type="file">`), so the URL is derived at runtime instead of at build
-    // time — `new URL(..., import.meta.url)` is not rewritten by Turbopack,
-    // Next.js 16's default bundler.
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-      "pdfjs-dist/build/pdf.worker.min.mjs",
-      import.meta.url,
-    ).toString();
+    // Point at the worker shipped with the package.
+    configurePdfWorker(pdfjs);
 
     const buf = await file.arrayBuffer();
     const doc = await pdfjs.getDocument({ data: buf }).promise;
@@ -201,14 +237,30 @@ async function processPdf(file: File): Promise<ProcessResult> {
     // Cap the work so a 500-page PDF does not freeze the tab.
     const limit = Math.min(doc.numPages, 60);
     for (let i = 1; i <= limit; i++) {
+      if (Date.now() > deadline) {
+        parts.push(
+          `[Text extraction stopped after 30s at page ${i} of ${doc.numPages}. The full file is still attached for models that read PDFs natively.]`,
+        );
+        break;
+      }
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
       const pageText = content.items
-        .map((it) => ("str" in it ? it.str : ""))
+        .map((it) => {
+          // pdf.js emits `str` items for text and `hasEOL` markers for line
+          // breaks. Dropping the markers (as we used to) glues headings onto
+          // the following paragraph — on a phone-sized screen that is most of
+          // the report.
+          if ("str" in it) return it.str;
+          if ("hasEOL" in it) return "\n";
+          return "";
+        })
         .join(" ")
-        .replace(/\s+/g, " ")
+        .replace(/[ \t]*\n[ \t]*/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/[ \t]{2,}/g, " ")
         .trim();
-      if (pageText) parts.push(`[Page ${i}] ${pageText}`);
+      if (pageText) parts.push(`[Page ${i}]\n${pageText}`);
     }
     if (doc.numPages > limit) {
       parts.push(`[Only the first ${limit} of ${doc.numPages} pages were extracted as text.]`);

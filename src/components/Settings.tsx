@@ -56,21 +56,24 @@ export default function Settings({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
-      <div className="my-8 w-full max-w-2xl rounded-2xl border border-ink-700 bg-ink-900 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/70 sm:p-4 sm:backdrop-blur-sm">
+      <div
+        className="my-0 w-full max-w-2xl rounded-2xl border border-ink-700 bg-ink-900 shadow-2xl sm:my-8"
+        style={{ marginBottom: "var(--safe-bottom)" }}
+      >
         {/* header */}
-        <div className="flex items-center justify-between border-b border-ink-800 px-5 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b border-ink-800 bg-ink-900 px-4 py-3 sm:px-5 sm:py-4">
           <h2 className="font-semibold">Settings &amp; models</h2>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg hover:bg-ink-800 text-gray-400"
+            className="h-10 w-10 -mr-1 rounded-lg hover:bg-ink-800 text-gray-400 text-xl leading-none sm:h-8 sm:w-8 sm:mr-0 sm:text-base"
             aria-label="Close settings"
           >
             ×
           </button>
         </div>
 
-        <div className="space-y-6 p-5">
+        <div className="space-y-6 p-4 sm:p-5">
           {/* ---------- providers ---------- */}
           <section>
             <h3 className="mb-2 text-[13px] font-semibold text-gray-300">
@@ -153,7 +156,7 @@ export default function Settings({
             <button
               onClick={runTest}
               disabled={testing}
-              className="rounded-lg bg-sky-600 px-3 py-2 text-[13px] font-medium hover:bg-sky-500 disabled:bg-ink-700 disabled:text-gray-500 transition"
+              className="w-full rounded-lg bg-sky-600 px-3 py-2.5 text-[13px] font-medium hover:bg-sky-500 disabled:bg-ink-700 disabled:text-gray-500 transition sm:w-auto sm:py-2"
             >
               {testing ? "Checking…" : "Test models"}
             </button>
@@ -233,7 +236,7 @@ export default function Settings({
                 await clearAll();
                 onCleared();
               }}
-              className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-300 hover:bg-red-500/20 transition"
+              className="mt-3 w-full rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-[12px] text-red-300 hover:bg-red-500/20 transition sm:w-auto sm:py-2"
             >
               Delete all local data
             </button>
